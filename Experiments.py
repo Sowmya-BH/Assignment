@@ -114,7 +114,7 @@ if "chat_history" not in st.session_state:
 
 
 
-load_dotenv()
+#load_dotenv()
 
 st.set_page_config(page_title = "MySQLDatabase Conversation App",page_icon=":speech_balloon:")
 st.title("MySQL Database Dialogue Engine")
