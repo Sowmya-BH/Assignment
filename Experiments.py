@@ -91,10 +91,8 @@ def get_sql_chain(db):
     """
     
   prompt = ChatPromptTemplate.from_template(template)
-  
-#   GROQ_API_KEY = st.secrets['GROQ_API_KEY']
-  # llm = ChatOpenAI(model="gpt-4-0125-preview")
-  llm = ChatGroq(model="llama-3.1-8b-instant",temperature=0,api_key='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')
+    
+  llm = ChatGroq(model="llama-3.1-8b-instant",temperature=0,api_key=st.secrets['groq_api_key'])
 
 
   def get_schema(_):
