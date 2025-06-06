@@ -1,13 +1,4 @@
-# Assignment
-It's great that you're building a Streamlit app to interact with your MySQL database\! Creating a `README.md` for your GitHub repository is an excellent way to introduce your project and make it easy for others (and your future self\!) to understand and use it.
-
-Here's a `README.md` tailored to your code, incorporating best practices and assuming a few things about your project setup.
-
------
-
 # MySQL Database Dialogue Engine
-
-*Consider replacing this with an actual screenshot of your running Streamlit app\!*
 
 This is a Streamlit application that allows users to interact with a MySQL database using natural language. It leverages **LangChain** for chaining conversational components and **Groq** for fast, efficient Large Language Model (LLM) inference to convert natural language questions into SQL queries.
 
@@ -103,7 +94,7 @@ This will open the Streamlit application in your web browser.
 
   * **MySQL User Permissions:** Ensure the MySQL user you're connecting with has sufficient permissions (`SELECT` on tables you want to query, and `SHOW TABLES`, `DESCRIBE` etc. for schema introspection) on the specified database.
   * **Root User Warning:** Using the `root` user for applications is generally discouraged in production environments due to security risks. Consider creating a dedicated user with minimal necessary privileges.
-  * **Model Selection:** The `get_sql_chain` function uses `llama-3.1-8b-instant`. You can change this to other available Groq models (e.g., `llama3-70b-8192`, `mixtral-8x7b-32768`) by modifying the `model` parameter in `ChatGroq` instantiation.
+  * **Model Selection:** The `get_sql_chain` function uses `llama-3.1-8b-instant`. You can change this to other available Groq models (e.g., `llama3-70b-8192`) by modifying the `model` parameter in `ChatGroq` instantiation.
 
 ## 🤝 Contributing
 
