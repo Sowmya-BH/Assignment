@@ -1,6 +1,7 @@
 # MySQL Database Dialogue Engine
 
-This is a Streamlit application that allows users to interact with a MySQL database using natural language. It leverages **LangChain** for chaining conversational components and **Groq** for fast, efficient Large Language Model (LLM) inference to convert natural language questions into SQL queries.
+Here is a Streamlit application that allows users to interact with a MySQL database using natural language. It leverages **LangChain** for chaining conversational components and **Groq** for fast, efficient Large Language Model (LLM) inference to convert natural language questions into SQL queries.The application is accessible at
+https://mysqldialoguedb.streamlit.app/ 
 
 ## ✨ Features
 
