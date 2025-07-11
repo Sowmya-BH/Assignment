@@ -1,4 +1,4 @@
-#from dotenv import load_dotenv
+from dotenv import load_dotenv
 from langchain_community.utilities import SQLDatabase
 from langchain_core.messages import AIMessage,HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
@@ -10,6 +10,8 @@ import streamlit as st
 
 from sqlalchemy.exc import DatabaseError, OperationalError
 from urllib.parse import quote_plus  # For password encoding
+
+
 
 
 def init_database(user:str,password:str,host:str,port:str,database:str,echo: bool = False)->SQLDatabase:
@@ -29,19 +31,6 @@ def init_database(user:str,password:str,host:str,port:str,database:str,echo: boo
     Returns:
         SQLDatabase instance or None if connection fails
     """
-    # try:
-    #     db_uri = f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}"
-    #     print(f"Attempting to connect with URI: {db_uri}")
-    #     db = SQLDatabase.from_uri(db_uri)
-    #     # Test connection
-    #     db.run("SELECT 1")
-    #     return db
-    # except Exception as e:
-    #     st.error(f"Connection failed: {str(e)}")
-    #     return None
-    
-    # db_uri = f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}"
-    # return SQLDatabase.from_uri(db_uri)
     try:
         # Encode special characters in password
         encoded_password = quote_plus(password)
@@ -79,10 +68,15 @@ def get_sql_chain(db):
     Write only the SQL query and nothing else. Do not wrap the SQL query in any other text, not even backticks.
     
     For example:
-    Question: which 3 artists have the most tracks?
-    SQL Query: SELECT ArtistId, COUNT(*) as track_count FROM Track GROUP BY ArtistId ORDER BY track_count DESC LIMIT 3;
-    Question: Name 10 artists
-    SQL Query: SELECT Name FROM Artist LIMIT 10;
+    Question: Print first 5 users in alphabetical order by username
+    SQL Query: SELECT username FROM users ORDER BY username ASC LIMIT 5;
+    Question: How many users in users table?
+    SQL Query: SELECT COUNT(*) FROM users;
+    Question: Name 10 articles
+    SQL Query: SELECT title FROM articles LIMIT 10;
+    Question : Find all users whose email address ends with b@example.com
+    SQL Query: SELECT username, email FROM users WHERE email LIKE '%@example.com';
+   
     
     Your turn:
     
@@ -91,7 +85,7 @@ def get_sql_chain(db):
     """
     
   prompt = ChatPromptTemplate.from_template(template)
-    
+  
   llm = ChatGroq(model="llama-3.1-8b-instant",temperature=0,api_key=st.secrets['groq_api_key'])
 
 
@@ -104,6 +98,67 @@ def get_sql_chain(db):
     | StrOutputParser()
   ) 
 
+def get_response(user_query: str, db: SQLDatabase, chat_history: list):
+  sql_chain = get_sql_chain(db)
+  # Initialize variables
+  sql_query = ""
+  query_result = ""
+    
+  try:
+        # First get the SQL query
+    sql_query = sql_chain.invoke({
+        "question": user_query,
+        "chat_history": chat_history,
+        })
+        
+        # Then execute the query
+    query_result = db.run(sql_query)
+  except Exception as e:
+    query_result = f"Error executing query: {str(e)}"
+        # Return early if there was an error
+    return f"SQL Query:\n```sql\n{sql_query}\n```\n\n{query_result}"
+    
+  
+  template = """
+    You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
+    Based on the table schema below, question, sql query, and sql response, write a natural language response.
+    <SCHEMA>{schema}</SCHEMA>
+
+    Conversation History: {chat_history}
+    SQL Query: <SQL>{query}</SQL>
+    User question: {question}
+    SQL Response: {response}"""
+  
+  prompt = ChatPromptTemplate.from_template(template)
+  
+  # llm = ChatOpenAI(model="gpt-4-0125-preview")
+  llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0,api_key=st.secrets['groq_api_key'])
+  
+  chain = (
+    RunnablePassthrough.assign(query=sql_chain).assign(
+      schema=lambda _: db.get_table_info(),
+      response=lambda vars: db.run(vars["query"]),
+    )
+    | prompt
+    | llm
+    | StrOutputParser()
+  )
+  # Get the natural language response
+  nl_response = chain.invoke({
+  "question": user_query,
+  "chat_history": chat_history,
+  "query": sql_query,
+  "response": query_result,
+    })
+    
+    # Combine both parts
+  full_response = f"SQL Query:\n```sql\n{sql_query}\n```\n\n{nl_response}"
+    
+  return full_response
+#   return chain.invoke({
+#     "question": user_query,
+#     "chat_history": chat_history,
+#   })
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
@@ -112,7 +167,7 @@ if "chat_history" not in st.session_state:
 
 
 
-#load_dotenv()
+load_dotenv()
 
 st.set_page_config(page_title = "MySQLDatabase Conversation App",page_icon=":speech_balloon:")
 st.title("MySQL Database Dialogue Engine")
@@ -169,9 +224,8 @@ if user_query is not None and user_query.strip() != "":
         
     with st.chat_message("AI"):
         sql_chain = get_sql_chain( st.session_state.sql_database_object)
-        response = sql_chain.invoke({"chat_history":st.session_state.chat_history,"question":user_query})
-        #response =get_response(user_query, st.session_state.db, st.session_state.chat_history)
+        # response = sql_chain.invoke({"chat_history":st.session_state.chat_history,"question":user_query})
+        response =get_response(user_query, st.session_state.sql_database_object, st.session_state.chat_history)
         st.markdown(response)
-        
     st.session_state.chat_history.append(AIMessage(content=response))
     
